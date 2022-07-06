@@ -1,0 +1,29 @@
+.
+├── 2021-28499-03
+│   ├── tumor.merged.cram
+│   └── tumor.merged.cram.crai
+├── 2022-03973-04
+│   ├── normal.merged.cram
+│   └── normal.merged.cram.crai
+├── CNV.somatic.F0046570.cnvkit.vcf2cytosure.cgh
+├── F0046570.gene_metrics
+├── SNV.germline.normal.dnascope.vcf.gz
+├── SNV.germline.normal.dnascope.vcf.gz.tbi
+├── SNV.germline.tumor.dnascope.vcf.gz
+├── SNV.germline.tumor.dnascope.vcf.gz.tbi
+├── SNV.somatic.F0046570.vardict.all.filtered.pass.vcf.gz
+├── SNV.somatic.F0046570.vardict.all.filtered.pass.vcf.gz.tbi
+├── SNV.somatic.F0046570.vardict.vcf.gz
+├── SNV.somatic.F0046570.vardict.vcf.gz.tbi
+├── SV.germline.normal.manta_germline.vcf.gz
+├── SV.germline.normal.manta_germline.vcf.gz.tbi
+├── SV.germline.tumor.manta_germline.vcf.gz
+├── SV.germline.tumor.manta_germline.vcf.gz.tbi
+├── SV.somatic.F0046570.svdb.all.filtered.pass.vcf.gz
+├── SV.somatic.F0046570.svdb.all.filtered.pass.vcf.gz.tbi
+├── SV.somatic.F0046570.svdb.vcf.gz
+├── SV.somatic.F0046570.svdb.vcf.gz.tbi
+├── multiqc_report.html
+├── tumor.merged-diagram.pdf
+├── tumor.merged-scatter.pdf
+└── tumor.merged.cns
