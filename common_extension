@@ -1,0 +1,10 @@
+vcf.gz
+vcf.gz.tbi
+cram
+cram.cai
+bam
+bam.bai
+cgh
+html
+pdf
+json
