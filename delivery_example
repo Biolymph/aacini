@@ -1,4 +1,4 @@
-.
+F0046570/
 ├── 2021-28499-03
 │   ├── tumor.merged.cram
 │   └── tumor.merged.cram.crai
@@ -6,6 +6,7 @@
 │   ├── normal.merged.cram
 │   └── normal.merged.cram.crai
 ├── CNV.somatic.F0046570.cnvkit.vcf2cytosure.cgh
+├── F0046570
 ├── F0046570.gene_metrics
 ├── SNV.germline.normal.dnascope.vcf.gz
 ├── SNV.germline.normal.dnascope.vcf.gz.tbi
