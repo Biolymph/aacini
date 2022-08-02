@@ -3,9 +3,11 @@ import json
 import pandas as pd
 import fnmatch
 import pathlib
-from constants import extensions_list, extensions_categories
 import os
 import pysam
+
+from aacini.utils.constants import extensions_list
+from aacini.utils.constants import extensions_categories
 
 def return_json_as_pydict(file: str) -> str:
     """

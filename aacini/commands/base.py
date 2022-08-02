@@ -1,12 +1,21 @@
-# Libraries
+
+
 from genericpath import isdir
 import click
 import os
-import functions
 import sqlite3
 
-@click.group()
-@click.version_option(version="1.0.0", prog_name="aacini")
+from aacini import __version__ as version
+from aacini.utils.functions import get_patient_id
+from aacini.utils.functions import get_file_name
+from aacini.utils.functions import get_extension
+from aacini.utils.functions import get_file_size
+from aacini.utils.functions import create_sha256
+from aacini.utils.functions import get_absolute_path
+from aacini.utils.functions import get_hts
+
+# @click.group()
+@click.version_option(version=version, prog_name="aacini")
 def cli():
     """
     This script contains Aacini, a program that helps understand
@@ -37,19 +46,19 @@ def extract_file_info(input_path):
             file_path = directory_path+"/"+file
 
             # Connect to database
-            connect_db = sqlite3.connect('aacini.db')
+            connect_db = sqlite3.connect('./database/aacini.db')
 
             # Create a cursor
             cursor = connect_db.cursor()
 
             if os.path.isfile(file_path) == True:
-                patient_id = functions.get_patient_id(directory_path)
-                filename = functions.get_file_name(file_path)
-                extension = functions.get_extension(file_path)
-                size = functions.get_file_size(file_path)
-                hash256 = functions.create_sha256(file_path)
-                abs_path = functions.get_absolute_path(file_path)
-                hts = functions.get_hts(file_path)
+                patient_id = get_patient_id(directory_path)
+                filename = get_file_name(file_path)
+                extension = get_extension(file_path)
+                size = get_file_size(file_path)
+                hash256 = create_sha256(file_path)
+                abs_path = get_absolute_path(file_path)
+                hts = get_hts(file_path)
 
                 cursor.execute("""INSERT INTO filetype_table VALUES(
                     :patient_id,
@@ -77,7 +86,7 @@ def extract_file_info(input_path):
         # Close connection
         connect_db.close()
 
-cli.add_command(extract_file_info)
+# cli.add_command(extract_file_info)
 
 if __name__ == "__main__":
     cli()
