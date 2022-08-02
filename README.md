@@ -1,17 +1,24 @@
+<img width="713" alt="aacini_logo3" src="https://user-images.githubusercontent.com/78170591/182372880-17ffe77a-a390-4c6f-9bcc-5ba2c333926f.png">
+
 # aacini
 Data summarization tools and scripts for Biolymph deliveries from SciLifeLab
 
-## Setting up a Python virtual environment
-We use conda to create the virtual environment and manage project dependencies in isolation, but feel free to use any other similar tool. Run the following commands in the repository folder (where requirements.txt is located) to create a conda environment with the required packages.
+## Getting the code
+You can download a copy of all the files in this repository by cloning the git repository:
 
-Create a conda environment with Python 3.7 and pip:
+`git clone https://github.com/biolymph/minerva`
+
+## Setting up a Python virtual environment
+It is recommended to create a virtual environment in conda and manage project dependencies in isolation, but other similar tools can be used. To set up the conda environment run the following commands in the repository folder.
+
+**Create a conda environment with Python 3.7 and pip:**
 
 `conda create -n aacini python=3.10 pip`
 
-Activate the conda environment:
+**Activate the conda environment:**
 
-`conda activate mul-emo-recog`
+`conda activate aacini`
 
-Install the required packages from requirements.txt:
+**Install the setup:**
 
-`pip install -r requirements.txt`
+`python3 setup.py install`
