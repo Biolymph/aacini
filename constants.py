@@ -11,7 +11,9 @@ extensions_categories = {
     'cgh': 'cgh',
     'html':'html',
     'pdf': 'pdf',
-    'json': 'json'
+    'json': 'json',
+    'cns': 'cns',
+    'gene_metrics':'gene_metrics'
 }
 
 extensions_list = [
@@ -27,5 +29,7 @@ extensions_list = [
     'cgh',
     'html',
     'pdf',
-    'json'
+    'json',
+    'cns',
+    'gene_metrics'
 ]
