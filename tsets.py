@@ -1,18 +1,28 @@
-import pysam 
+# import pysam 
 
-file = '/Users/ki/Documents/GitHub/minerva/test_files/F0046570/2021-28499-03/tumor.merged.cram'
+# file = '/Users/ki/Documents/GitHub/minerva/test_files/F0046570/2021-28499-03/tumor.merged.cram'
 
-with open(file, "r") as opened_file:
+# with open(file, "r") as opened_file:
 
-    # Read file content
-    # opened_file.read()
+#     # Read file content
+#     # opened_file.read()
 
-    # Extract file format
-    #file_format = pysam.HTSFile(opened_file)
-    with pysam.HTSFile(opened_file, mode='r') as htsobj:
-        #print(opened_file)
-        print(dir(htsobj))
-        print(htsobj.is_closed)
+#     # Extract file format
+#     #file_format = pysam.HTSFile(opened_file)
+#     with pysam.HTSFile(opened_file, mode='r') as htsobj:
+#         #print(opened_file)
+#         print(dir(htsobj))
+#         print(htsobj.is_closed)
 
 
-    #print(file_format)
+#     #print(file_format)
+
+import os
+
+directory_list = os.listdir('./test_files')
+print('----------------------------------------------------------------------')
+print()
+print('Total patients to process: ', directory_list)
+print()
+print('----------------------------------------------------------------------')
+print()

@@ -1,16 +1,14 @@
 
 
 from email.policy import default
-from genericpath import isdir
+from genericpath import isdir, isfile
 import click
 import os
 import sqlite3
 
 from aacini import __version__ as version
-from aacini.utils.functions import connect_database, create_filetype_table
-from aacini.utils.functions import create_cursor
-from aacini.utils.functions import commit_input
-from aacini.utils.functions import close_connection
+from aacini.utils.functions import create_filetype_table
+from aacini.utils.functions import count_records
 from aacini.utils.functions import get_patient_id
 from aacini.utils.functions import get_file_name
 from aacini.utils.functions import get_extension
@@ -32,47 +30,64 @@ def cli():
 # Organize by extension
 @click.command('extract')
 @click.option('--input_path', '-i', help='Specify path.')
-@click.option('--db', '-db', help='Specify database.', default='aacini.db')
+@click.option('--db', '-db', help='Specify database name.', default='aacini.db')
 def extract_file_info(input_path, db):
     """
     Extract information of file and directory structure.
 
-    eg. aacini extract_file_info -i .
+    eg. aacini extract_file_info -i ./files -db database.db
     """
     directory_list = os.listdir(input_path)
+    print('----------------------------------------------------------------------')
+    print()
+    print('Total patients to process: ', len(directory_list))
+    print()
+    print('----------------------------------------------------------------------')
+    print()
 
     if len(directory_list) == 0:
         click.secho('Found nothing to sort! Bye!', fg='blue')
     
-    with click.progressbar(directory_list) as dir_bar:
-        for directory in dir_bar:
-            directory_path = os.path.join(input_path, directory)
-            file_list = os.listdir(directory_path)
-            file_count = len(file_list)
+    for directory in directory_list:
+        directory_path = os.path.join(input_path, directory)
+        
+        # Iterate directory to include only files
+        file_list = []
 
-            with click.progressbar(file_list, show_eta='enable', fill_char='|', empty_char='') as bar:
-                for file in bar:
-                    file_path = os.path.join(directory_path,file)
+        for directory_path, subdir_path, file_names in os.walk(directory_path):
+            file_list.append(file_names)
+        
+        found_files = len(file_list)
 
-                    # Connect to database
-                    connection = connect_database(db)
+        with click.progressbar(file_list, show_eta='enable', fill_char='|', empty_char='') as files_to_process:
+            for file in files_to_process:
+                file_path = os.path.join(directory_path,file)
 
-                    # Create a cursor
-                    cursor = create_cursor(connection)
+                # Connect to database
+                connection = sqlite3.connect(db)
 
-                    # Create table if it does not exist
-                    create_filetype_table(connection,cursor)
+                # Create a cursor
+                cursor = connection.cursor()
 
-                    if os.path.isfile(file_path) == True:
-                        patient_id = get_patient_id(directory_path)
-                        filename = get_file_name(file_path)
-                        extension = get_extension(file_path)
-                        size = get_file_size(file_path)
-                        hash256 = create_sha256(file_path)
-                        abs_path = get_absolute_path(file_path)
-                        hts = get_hts(file_path)
+                # Create table if it does not exist
+                create_filetype_table(connection, cursor)
 
-                        cursor.execute("""INSERT OR IGNORE INTO filetype_table VALUES(
+                past_records = count_records(
+                                        cursor= cursor,
+                                        table='filetype_table', 
+                                        column='patient_id',
+                                        value=directory)
+
+                if os.path.isfile(file_path) == True:
+                    patient_id = get_patient_id(directory_path)
+                    filename = get_file_name(file_path)
+                    extension = get_extension(file_path)
+                    size = get_file_size(file_path)
+                    hash256 = create_sha256(file_path)
+                    abs_path = get_absolute_path(file_path)
+                    hts = get_hts(file_path)                    
+
+                    cursor.execute("""INSERT OR IGNORE INTO filetype_table VALUES(
                             :patient_id,
                             :filename,
                             :extension,
@@ -89,15 +104,29 @@ def extract_file_info(input_path, db):
                             "hts": hts
                             })
 
-                        connection.commit()
+                    connection.commit()
+                    
+                    # Count records after commit
+                    records_after_commit = count_records(
+                                        cursor= cursor,
+                                        table='filetype_table', 
+                                        column='patient_id', 
+                                        value=patient_id)
 
-                    cursor.close()
-            
-                print()
-                print("  Records of patient {} inserted successfully into database: {}".format(patient_id, file_count))
+                    new_records = records_after_commit - past_records
+
+                cursor.close()
+    
+            print()
+            print("Records of patient {}".format(patient_id))
+            print('Found in directory: {}'.format(found_files) )
+            print('Previous records in database: {}'.format(past_records))
+            print('New records in database: {}'.format(new_records))
+            print()
+            print('----------------------------------------------------------------------')
   
-                # Close connection
-                connection.close()
+            # Close connection
+            connection.close()
 
 cli.add_command(extract_file_info)
 

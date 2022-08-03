@@ -1,5 +1,6 @@
 import hashlib
 import json
+from numpy import var
 import pandas as pd
 import fnmatch
 import pathlib
@@ -10,6 +11,11 @@ import pysam
 from aacini.utils.constants import extensions_list
 from aacini.utils.constants import extensions_categories
 
+
+######################################################################
+######################################################################
+### File information extraction functions
+######################################################################
 def return_json_as_pydict(file: str) -> str:
     """
     Function that returns a json file containing multiple 
@@ -158,7 +164,7 @@ def get_hts(file: str) -> str:
     Detect file format via pysamtools using htsfile functionality.
 
     Args: 
-        File name or absolute path.
+        file: file name or absolute path.
 
     Returns:
         File format.
@@ -177,43 +183,85 @@ def get_hts(file: str) -> str:
     #     file_format = pysam.HTSFile(content).format
     #     return file_format
 
-def connect_database(database):
-    # Connect to database
-    connection = sqlite3.connect(database)
-    return connection
+######################################################################
+######################################################################
+### Database functions
+######################################################################
+def create_filetype_table(connection, cursor):
+    """
+    Creates table to store 'File type' information per file per 
+    patient if it does not exist already.
 
-def create_cursor(connection):
-    # Create a cursor
-    cursor = connection.cursor()
-    return cursor
-
-def commit_input(connection):
-    # Commit tables
-    connection.commit()
-
-def close_connection(connection):
-    # Close connection
-    connection.close()
-
-def create_filetype_table(connection, cursor): 
+    Args:
+        connection: sqlite3 connection to database using the connect 
+            function. 
+            E.g.: connection = sqlite3.connect('database_name.db')
+        cursor: sqlite3 cursor created in the connection using the 
+            cursor method.
+            E.g.: cursor = connection.cursor()
+    
+    Returns:
+        Commited 'File type' table into the database.
+    """ 
     cursor.execute("""CREATE TABLE if not exists filetype_table (
-        patient_id text,
-        filename text,
-        extension text,
-        size real,
-        hash_sha256 text,
-        file_location text,
-        hts text,
-        UNIQUE(patient_id, filename, size, hash_sha256)
-        )""")
+            patient_id text,
+            filename text,
+            extension text,
+            size real,
+            hash_sha256 text,
+            file_location text,
+            hts text,
+            
+            UNIQUE(patient_id, filename, size, hash_sha256)
+            )""")
     connection.commit()
 
 def create_filecontent_table(connection, cursor):
+    """
+    Creates table to store 'File content' information per file per 
+    patient if it does not exist already.
+
+    Args:
+        connection: sqlite3 connection to database using the connect 
+            function. 
+            E.g.: connection = sqlite3.connect('database_name.db')
+        cursor: sqlite3 cursor created in the connection using the 
+            cursor method. 
+            E.g.: cursor = connection.cursor()
+    
+    Returns:
+        Commited 'File type' table into the database.
+    """
     cursor.execute("""CREATE TABLE if not exists filecontent_table (
-        patient_id text,
-        file_name text,
-        file_type text,
-        feature_count integer,
-        feature_type text
-        )""")
+            patient_id text,
+            file_name text,
+            file_type text,
+            feature_count integer,
+            feature_type text
+            )""")
     connection.commit()
+
+def count_records(cursor: str, table: str, column: str, value: str):
+    """
+    Counts the amount of records per patient ID stored in a 
+    given database table.
+
+    Args:
+        cursor: sqlite3 cursor created in the connection using the 
+            cursor method. 
+            E.g.: cursor = connection.cursor()
+        table: table name where to count the records.
+        column: column name where to count the records.
+        patient_id: unique string used to identify the patient.
+
+    Returns:
+        Number of records in a database table per patient ID. 
+    """
+    cursor.execute(f"SELECT COUNT({column})AS files_per_patient FROM {table} WHERE {column}='{value}'")
+    count = cursor.fetchone()[0]
+    return count
+
+######################################################################
+######################################################################
+### Quality control functions
+######################################################################
