@@ -4,6 +4,7 @@ import pandas as pd
 import fnmatch
 import pathlib
 import os
+import sqlite3
 import pysam
 
 from aacini.utils.constants import extensions_list
@@ -32,6 +33,9 @@ def return_json_as_pydict(file: str) -> str:
     # Extract samples names
     for sample in data['samples']:
         print(sample['name'])
+
+    # Close file
+    opened_file.close()
 
 
 def get_file_name(file: str) -> str:
@@ -125,7 +129,8 @@ def get_file_size(file: str) -> str:
 
 def create_sha256(file: str) -> str:
     """
-    This function creates a 32-byte hash or message digest using the sha256 algorithm.
+    This function creates a 32-byte hash or message digest 
+    using the sha256 algorithm.
 
     Args:
         File name or absolute path.
@@ -142,6 +147,10 @@ def create_sha256(file: str) -> str:
 
         # Create hash for the file
         sha256.update(content)
+
+        # Close file
+        opened_file.close()
+
         return sha256.hexdigest()
 
 def get_hts(file: str) -> str:
@@ -160,10 +169,51 @@ def get_hts(file: str) -> str:
             file_category = category
             return file_category
 
-    # with open(file, "rb") as opened_file:
+    # with open(file, "rt") as opened_file:
     #     # Read file content
     #     content = opened_file.read()
 
     #     # Extract file format
     #     file_format = pysam.HTSFile(content).format
     #     return file_format
+
+def connect_database(database):
+    # Connect to database
+    connection = sqlite3.connect(database)
+    return connection
+
+def create_cursor(connection):
+    # Create a cursor
+    cursor = connection.cursor()
+    return cursor
+
+def commit_input(connection):
+    # Commit tables
+    connection.commit()
+
+def close_connection(connection):
+    # Close connection
+    connection.close()
+
+def create_filetype_table(connection, cursor): 
+    cursor.execute("""CREATE TABLE if not exists filetype_table (
+        patient_id text,
+        filename text,
+        extension text,
+        size real,
+        hash_sha256 text,
+        file_location text,
+        hts text,
+        UNIQUE(patient_id, filename, size, hash_sha256)
+        )""")
+    connection.commit()
+
+def create_filecontent_table(connection, cursor):
+    cursor.execute("""CREATE TABLE if not exists filecontent_table (
+        patient_id text,
+        file_name text,
+        file_type text,
+        feature_count integer,
+        feature_type text
+        )""")
+    connection.commit()
