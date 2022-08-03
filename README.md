@@ -13,7 +13,7 @@ It is recommended to create a virtual environment in conda and manage project de
 
 **Create a conda environment with Python 3.7 and pip:**
 
-`conda create -n aacini python=3.10 pip`
+`conda create -n aacini python=3.10.5 pip`
 
 **Activate the conda environment:**
 
