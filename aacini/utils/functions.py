@@ -8,6 +8,7 @@ import os
 import sqlite3
 import pysam
 
+from datetime import datetime
 from aacini.utils.constants import extensions_list
 from aacini.utils.constants import extensions_categories
 
@@ -16,6 +17,7 @@ from aacini.utils.constants import extensions_categories
 ######################################################################
 ### File information extraction functions
 ######################################################################
+
 def return_json_as_pydict(file: str) -> str:
     """
     Function that returns a json file containing multiple 
@@ -187,6 +189,7 @@ def get_hts(file: str) -> str:
 ######################################################################
 ### Database functions
 ######################################################################
+
 def create_filetype_table(connection, cursor):
     """
     Creates table to store 'File type' information per file per 
@@ -241,6 +244,31 @@ def create_filecontent_table(connection, cursor):
             )""")
     connection.commit()
 
+def create_missingfiles_table(connection, cursor):
+    """
+    Creates table to store 'Missing files' information per file per 
+    patient if it does not exist already.
+
+    Args:
+        connection: sqlite3 connection to database using the connect 
+            function. 
+            E.g.: connection = sqlite3.connect('database_name.db')
+        cursor: sqlite3 cursor created in the connection using the 
+            cursor method. 
+            E.g.: cursor = connection.cursor()
+    
+    Returns:
+        Commited 'Missing files' table into the database.
+    """
+    cursor.execute("""CREATE TABLE if not exists missingfiles_table (
+            patient_id text,
+            date string,
+            file_missing text,
+
+            UNIQUE(patient_id, date, file_missing)
+            )""")
+    connection.commit()
+
 def count_records(cursor: str, table: str, column: str, value: str):
     """
     Counts the amount of records per patient ID stored in a 
@@ -257,11 +285,150 @@ def count_records(cursor: str, table: str, column: str, value: str):
     Returns:
         Number of records in a database table per patient ID. 
     """
-    cursor.execute(f"SELECT COUNT({column})AS files_per_patient FROM {table} WHERE {column}='{value}'")
+    cursor.execute(f"""SELECT COUNT({column}) 
+                    AS files_per_patient 
+                    FROM {table} 
+                    WHERE {column}='{value}'""")
     count = cursor.fetchone()[0]
     return count
 
+def count_essential_files(cursor: str, connection: str, column_filename: str, 
+        table: str, patient_id: str, column_patient_id: str):
+    """
+    This function looks for the existance of four essential files
+    for the study that should exist within the list of 
+    files per patient:
+        - SV.germline
+        - SNV.germline
+        - SV.somatic
+        - SNV.somatic
+
+    Args:
+        cursor: sqlite3 cursor created in the connection using the 
+            cursor method. 
+            E.g.: cursor = connection.cursor()
+        table: table name where to count the records.
+        column_filename: column where file name is stored.
+        patient_id: unique string used to identify the patient.
+        column_patient_id: column where patient ID is stored.
+    
+    Returns:
+        List of counts where essential files found in the file list given.
+    """
+    # Instantiate list 
+    counts_list = []
+    
+    # Count records starting with: SV.germline and appends the number to a list
+    cursor.execute(f"""SELECT COUNT({column_filename})
+                AS essential_files
+                FROM {table}
+                WHERE {column_filename} LIKE 'SV.germline%' 
+                AND {column_patient_id} = '{patient_id}'
+                """)
+    sv_germline_count = cursor.fetchone()[0]
+    counts_list.append(sv_germline_count)
+
+    # If the count == 0, records the missing file into a table in the database
+    if sv_germline_count == 0:
+        cursor.execute("""INSERT OR IGNORE INTO missingfiles_table VALUES(
+                :patient_id,
+                :date,
+                :file_missing)""",
+                    {"patient_id": patient_id,
+                    "date": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                    "file_missing": 'SV.germline'})
+        connection.commit()
+
+    # Count records starting with: SNV.germline and appends the number to a list
+    cursor.execute(f"""SELECT COUNT({column_filename})
+                AS essential_files
+                FROM {table}
+                WHERE {column_filename} LIKE 'SNV.germline%' 
+                AND {column_patient_id} = '{patient_id}'
+                """)
+    snv_germline_count = cursor.fetchone()[0]
+    counts_list.append(snv_germline_count)
+
+    # If the count == 0, records the missing file into a table in the database
+    if snv_germline_count == '0':
+        cursor.execute("""INSERT OR IGNORE INTO missingfiles_table VALUES(
+                :patient_id,
+                :date,
+                :file_missing)""",
+                    {"patient_id": patient_id,
+                    "date": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                    "file_missing": 'SNV.germline'})
+        connection.commit()
+
+    # Count records starting with: SV.somatic and appends the number to a list
+    cursor.execute(f"""SELECT COUNT({column_filename})
+                AS essential_files
+                FROM {table}
+                WHERE {column_filename} LIKE 'SV.somatic%' 
+                AND {column_patient_id} = '{patient_id}'
+                """)
+    sv_somatic_count = cursor.fetchone()[0]
+    counts_list.append(sv_somatic_count)
+
+    # If the count == 0, records the missing file into a table in the database
+    if sv_somatic_count == '0':
+        cursor.execute("""INSERT OR IGNORE INTO missingfiles_table VALUES(
+                :patient_id,
+                :date,
+                :file_missing)""",
+                    {"patient_id": patient_id,
+                    "date": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                    "file_missing": 'SV.somatic'})
+        connection.commit()   
+    
+    # Count records starting with: SNV.somatic and appends the number to a list
+    cursor.execute(f"""SELECT COUNT({column_filename})
+                AS essential_files
+                FROM {table}
+                WHERE {column_filename} LIKE 'SNV.somatic%' 
+                AND {column_patient_id} = '{patient_id}'
+                """)
+    snv_somatic_count = cursor.fetchone()[0]
+    counts_list.append(snv_somatic_count)   
+
+    # If the count == 0, records the missing file into a table in the database
+    if snv_somatic_count == '0':
+        cursor.execute("""INSERT OR IGNORE INTO missingfiles_table VALUES(
+                :patient_id,
+                :date,
+                :file_missing)""",
+                    {"patient_id": patient_id,
+                    "date": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                    "file_missing": 'SNV.somatic'})
+        connection.commit() 
+        
+    return counts_list
+
+
 ######################################################################
 ######################################################################
-### Quality control functions
+### Quality control & Stats functions
 ######################################################################
+
+def list_patients_missing_files(cursor: str):
+    """
+    This function records the missing essential files per patient
+    at the date when the program was executed. For the study, 
+    four files per patient should exist:
+        - SV.germline
+        - SNV.germline
+        - SV.somatic
+        - SNV.somatic
+
+    Args:
+        file_list: python list of the files to search per patient
+    
+    Returns:
+        List of essential files found in the file list given.
+    """
+    cursor.execute(f"""SELECT DISTINCT patient_id
+                FROM missingfiles_table
+                WHERE date = {datetime.now().date()}
+                """)
+    for row in cursor:
+        print(row[0])
