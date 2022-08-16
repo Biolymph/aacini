@@ -71,18 +71,16 @@ def extract_file_info(input_path, db):
         # Count files found in the directory
         found_files = len(file_list)
 
-        # Connect to database
+        # Connect to database and create cursor
         connection = sqlite3.connect(db)
-
-        # Create a cursor
         cursor = connection.cursor()
 
         # Create table if it does not exist
-        create_filetype_table(connection, cursor)
+        create_filetype_table(database=db)
 
         # Count past records of the patient
         past_records = count_records(
-                    cursor= cursor,
+                    database=db,
                     table='filetype_table', 
                     column='patient_id',
                     value=directory)
@@ -122,13 +120,16 @@ def extract_file_info(input_path, db):
 
                 connection.commit()
 
-                # Create table in database to register missing files
-                create_missingfiles_table(connection, cursor)
+            # Close cursor and connection
+            cursor.close()
+            connection.close()
 
-                # Count and record the missing files per patient
-                essential_files_count = count_essential_files(
-                            cursor=cursor,
-                            connection=connection,
+            # Create table in database to register missing files
+            create_missingfiles_table(database=db)
+
+            # Count and record the missing files per patient
+            essential_files_count = count_essential_files(
+                            database=db,
                             column_filename='filename',
                             table='filetype_table',
                             column_patient_id='patient_id',
@@ -136,14 +137,14 @@ def extract_file_info(input_path, db):
     
             # Count records after commit
             records_after_commit = count_records(
-                                        cursor= cursor,
+                                        database=db,
                                         table='filetype_table', 
                                         column='patient_id', 
                                         value=patient_id)
             
             # Count new records recorded in database
             new_records = records_after_commit - past_records
-            
+
             print("\n")
             print("Patient: {}".format(patient_id),"\n")
             print("Found in directory: {}".format(found_files))
@@ -157,17 +158,16 @@ def extract_file_info(input_path, db):
 
             
         print("----------------------------------------------------------------------")
+
+    
+
     print("----------------------------------------------------------------------")
     print()
     print("Total patients processed: ", len(directory_list))
-    print("Patients missing essential files: \n")
-    print(list_patients_missing_files(cursor))
-
-    # Close cursor
-    cursor.close()
-
-    # Close connection
-    connection.close()
+    print()
+    print("Patients missing essential files: ")
+    list_patients_missing_files(database=db)
+    
 
 cli.add_command(extract_file_info)
 
