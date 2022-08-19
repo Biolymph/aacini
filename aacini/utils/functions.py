@@ -28,7 +28,7 @@ def return_json_as_pydict(file: str) -> str:
     Use case: files with multi samples.
 
     Args:
-        file: file name or absolute path.
+        :param file: file name or absolute path.
 
     Returns:
         Python dictionary with the names of the samples 
@@ -53,7 +53,7 @@ def get_file_name(file: str) -> str:
     This function gets the original file name.
 
     Args:
-        file: file name or absolute path.
+        :param file: file name or absolute path.
 
     Returns:
         Final component of a file path (file name).
@@ -71,7 +71,7 @@ def get_extension(file: str) -> str:
     extensions are required, the list needs to be updated.
 
     Args:
-        file: file name or absolute path.
+        :param file: file name or absolute path.
 
     Returns:
         File extension.
@@ -86,7 +86,7 @@ def get_absolute_path(file: str) -> str:
     This function gets the original absolute path of the file.
 
     Args:
-        file: file name or absolute path..
+        :param file: file name or absolute path..
     
     Returns:
         Absolute path where the file is located.
@@ -102,7 +102,7 @@ def get_patient_id(directory: str) -> str:
     patient's files are stored.
 
     Args:
-        directory: directory name or absolute path.
+        :param directory: directory name or absolute path.
 
     Returns:
         Unique string used to identify a patient.
@@ -115,7 +115,7 @@ def get_file_size(file: str) -> str:
     This function gets the size of the file.
 
     Args:
-        file: file name or absolute path.
+        :param file: file name or absolute path.
 
     Returns:
         File size.
@@ -143,7 +143,7 @@ def create_sha256(file: str) -> str:
     using the sha256 algorithm.
 
     Args:
-        file: file name or absolute path.
+        :param file: file name or absolute path.
 
     Returns:
         Hexadecimal 32-byte hash of the file using the sha256 algorithm.
@@ -168,7 +168,7 @@ def get_hts(file: str) -> str:
     Detect file format via pysamtools using htsfile functionality.
 
     Args: 
-        file: file name or absolute path.
+        :param file: file name or absolute path.
 
     Returns:
         File format.
@@ -199,7 +199,7 @@ def create_filetype_table(database:str):
     patient if it does not exist already.
 
     Args:
-        database: name of the database to connect to.
+        :param database: name of the database to connect to.
     
     Returns:
         Commited 'File type' table into the database.
@@ -231,7 +231,7 @@ def create_filecontent_table(database:str):
     patient if it does not exist already.
 
     Args:
-        database: name of the database to connect to.
+        :param database: name of the database to connect to.
     
     Returns:
         Commited 'File type' table into the database.
@@ -259,7 +259,7 @@ def create_missingfiles_table(database: str):
     patient if it does not exist already.
 
     Args:
-        database: name of the database to connect to.
+        :param database: name of the database to connect to.
     
     Returns:
         Commited 'Missing files' table into the database.
@@ -270,10 +270,12 @@ def create_missingfiles_table(database: str):
 
     cursor.execute("""CREATE TABLE if not exists missingfiles_table (
             patient_id text,
-            date string,
             file_missing text,
+            first_date_missing string,
+            last_date_missing string,
+            date_added string,
 
-            UNIQUE(patient_id, date, file_missing)
+            UNIQUE(patient_id, file_missing)
             )""")
     connection.commit()
 
@@ -287,10 +289,10 @@ def count_records(database: str, table: str, column: str, value: str):
     given database table.
 
     Args:
-        database: name of the database to connect to.
-        table: table name where to count the records.
-        column: column name where to count the records.
-        value: value to count in the records.
+        :param database: name of the database to connect to.
+        :param table: table name where to count the records.
+        :param column: column name where to count the records.
+        :param value: value to count in the records.
 
     Returns:
         Number of records in a database table per patient ID. 
@@ -312,7 +314,7 @@ def count_records(database: str, table: str, column: str, value: str):
     return count
     
 
-def count_essential_files(database: str, column_filename: str, 
+def check_essential_files(database: str, column_filename: str, 
         table: str, patient_id: str, column_patient_id: str):
     """
     This function looks for the existance of four essential files
@@ -324,11 +326,11 @@ def count_essential_files(database: str, column_filename: str,
         - SNV.somatic
 
     Args:
-        database: name of the database to connect to.
-        table: table name where to count the records.
-        column_filename: column where file name is stored.
-        patient_id: unique string used to identify the patient.
-        column_patient_id: column where patient ID is stored.
+        :param database: name of the database to connect to.
+        :param table: table name where to count the records.
+        :param column_filename: column where file name is stored.
+        :param patient_id: unique string used to identify the patient.
+        :param column_patient_id: column where patient ID is stored.
     
     Returns:
         List of counts where essential files found in the file list given.
@@ -346,24 +348,55 @@ def count_essential_files(database: str, column_filename: str,
     for file_pattern in file_patterns:
         # Count records starting with: SV.germline and appends the number to a list
         cursor.execute(f"""SELECT COUNT({column_filename})
-                AS essential_files
-                FROM {table}
-                WHERE {column_filename} LIKE '{file_pattern}%' 
-                AND {column_patient_id} = '{patient_id}'
-                """)
-        count = cursor.fetchone()[0]
-        counts_list.append(count)
+            AS essential_files
+            FROM {table}
+            WHERE {column_filename} LIKE '{file_pattern}%' 
+            AND {column_patient_id} = '{patient_id}'
+            """)
+        essential_files_count = cursor.fetchone()[0]
+        counts_list.append(essential_files_count)
+
+        cursor.execute(f"""SELECT COUNT(file_missing)
+            FROM missingfiles_table
+            WHERE patient_id = "{patient_id}" AND file_missing = "{file_pattern}"
+            """)
+        files_registered_missing_count = cursor.fetchone()[0]
 
         # If the count == 0, records the missing file into a table in the database
-        if count == 0:
+        if essential_files_count == 0 and files_registered_missing_count == 0:
             cursor.execute("""INSERT OR IGNORE INTO missingfiles_table VALUES(
                 :patient_id,
-                :date,
-                :file_missing)""",
+                :file_missing,
+                :first_date_missing,
+                :last_date_missing,
+                :date_added)""",
                     {"patient_id": patient_id,
-                    "date": datetime.datetime.today().strftime("%d/%m/%Y %H:%M:%S"),
-                    "file_missing": file_pattern})
+                    "file_missing": file_pattern,
+                    "first_date_missing": datetime.datetime.today().strftime("%d/%m/%Y %H:%M:%S"),
+                    "last_date_missing": datetime.datetime.today().strftime("%d/%m/%Y %H:%M:%S"),
+                    "date_added": ""})
             connection.commit()
+
+        elif essential_files_count == 0 and files_registered_missing_count > 0:
+            cursor.execute(f"""UPDATE missingfiles_table 
+                SET last_date_missing = "{datetime.datetime.today().strftime("%d/%m/%Y %H:%M:%S")}"
+                WHERE patient_id = "{patient_id}" AND file_missing = "{file_pattern}"
+                """)
+            connection.commit()
+
+        elif essential_files_count > 0 and files_registered_missing_count > 0:
+            cursor.execute(f"""SELECT date_added
+                FROM missingfiles_table
+                WHERE patient_id = "{patient_id}" AND file_missing = "{file_pattern}"
+                """)
+            file_added = cursor.fetchone()[0]    
+            
+            if file_added == "":
+                cursor.execute(f"""UPDATE missingfiles_table 
+                    SET date_added = "{datetime.datetime.today().strftime("%d/%m/%Y %H:%M:%S")}"
+                    WHERE patient_id = "{patient_id}" AND file_missing = "{file_pattern}"
+                    """)
+                connection.commit()
     
     # Close cursor and connection
     cursor.close()
@@ -388,7 +421,7 @@ def list_patients_missing_files(database: str):
         - SNV.somatic
 
     Args:
-        database: name of the database to connect to.
+        :param database: name of the database to connect to.
     
     Returns:
         List of essential files found in the file list given.
@@ -401,14 +434,22 @@ def list_patients_missing_files(database: str):
         # Select patient ids and fetch all distinct records
         cursor.execute(f"""SELECT DISTINCT patient_id,file_missing
                 FROM missingfiles_table
-                WHERE date >= {datetime.date.today()}
+                WHERE first_date_missing > 0 
+                    AND last_date_missing > 0 
+                    AND date_added = "" 
                 """)
 
-        # Print records fetched
-        for row in cursor:
-            print("     -",row[0],": ",row[1])
+        records = cursor.fetchall()
+
+        if records == []:
+            print("     - None")  
+        else:
+            # Print records fetched
+            for row in cursor:
+                print("     -",row[0],": ",row[1])
             
-        cursor.close()    
+            cursor.close()
+          
     
     except sqlite3.Error as error:
         print("Failed to read data from table,", error)

@@ -167,7 +167,8 @@ def extract_file_info(input_path, db):
     print()
     print("Patients missing essential files: ")
     list_patients_missing_files(database=db)
-    
+    print()
+
 
 cli.add_command(extract_file_info)
 
