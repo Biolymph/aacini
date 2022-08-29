@@ -10,7 +10,7 @@ import sys
 from aacini import __version__ as version
 
 # File information extraction functions
-from aacini.utils.functions import get_file_name, print_missing_files_list
+from aacini.utils.functions import get_file_name
 from aacini.utils.functions import get_extension
 from aacini.utils.functions import get_absolute_path
 from aacini.utils.functions import get_patient_id
@@ -38,9 +38,6 @@ from aacini.utils.functions import compare_hash
 # Report creation functions
 from aacini.utils.functions import create_patient_summary
 from aacini.utils.functions import create_report_summary
-from aacini.utils.functions import print_empty_files_list
-from aacini.utils.functions import print_missing_files_list
-from aacini.utils.functions import print_unmatching_hash_list
 from aacini.utils.functions import export_to_txt
 
 @click.group()
