@@ -27,3 +27,13 @@ filetype that is missing.
 one row per missing filetype including the first_date_missing, 
 last_date_missing and date_added. The purpose is to easily track when the
 file was missing and when it was added.
+
+## [0.1.0] (2022-08-29)
+
+### Changed: 
+* Report prints directly to txt. Only summary is shown in the terminal. 
+* Modularity of print/list functions.
+
+### Added:
+* Function to compare hashes from the same file and record it in a new
+table in the database. 

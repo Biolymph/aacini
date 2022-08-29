@@ -13,7 +13,8 @@ extensions_categories = {
     'pdf': 'pdf',
     'json': 'json',
     'cns': 'cns',
-    'gene_metrics':'gene_metrics'
+    'gene_metrics':'gene_metrics',
+    'doc':'doc'
 }
 
 extensions_list = [
@@ -31,5 +32,6 @@ extensions_list = [
     'pdf',
     'json',
     'cns',
-    'gene_metrics'
+    'gene_metrics',
+    'doc'
 ]

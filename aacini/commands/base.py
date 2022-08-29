@@ -1,24 +1,47 @@
-
-
 from email.policy import default
 from genericpath import isdir, isfile
 import click
 import os
 import sqlite3
 import pathlib
+import datetime
+import sys
 
 from aacini import __version__ as version
-from aacini.utils.functions import create_filetype_table, list_patients_missing_files
-from aacini.utils.functions import count_records
-from aacini.utils.functions import get_patient_id
-from aacini.utils.functions import get_file_name
+
+# File information extraction functions
+from aacini.utils.functions import get_file_name, print_missing_files_list
 from aacini.utils.functions import get_extension
+from aacini.utils.functions import get_absolute_path
+from aacini.utils.functions import get_patient_id
 from aacini.utils.functions import get_file_size
 from aacini.utils.functions import create_sha256
-from aacini.utils.functions import get_absolute_path
 from aacini.utils.functions import get_hts
-from aacini.utils.functions import count_essential_files
-from aacini.utils.functions import create_missingfiles_table
+
+# Database infrastructure functions
+from aacini.utils.functions import create_file_information_table
+from aacini.utils.functions import create_missing_files_table
+from aacini.utils.functions import create_unmatching_hash_table
+
+# Database interaction functions
+from aacini.utils.functions import record_file_info
+from aacini.utils.functions import count_records
+from aacini.utils.functions import check_essential_files
+
+# Quality control & Stats functions
+from aacini.utils.functions import list_patients_missing_files
+from aacini.utils.functions import list_unmatching_hashes
+from aacini.utils.functions import list_empty_files
+from aacini.utils.functions import define_status
+from aacini.utils.functions import compare_hash
+
+# Report creation functions
+from aacini.utils.functions import create_patient_summary
+from aacini.utils.functions import create_report_summary
+from aacini.utils.functions import print_empty_files_list
+from aacini.utils.functions import print_missing_files_list
+from aacini.utils.functions import print_unmatching_hash_list
+from aacini.utils.functions import export_to_txt
 
 @click.group()
 @click.version_option(version=version, prog_name="aacini")
@@ -42,6 +65,11 @@ def extract_file_info(input_path, db):
     """
     # List directories 
     directory_list = os.listdir(input_path)
+    print("\n","Patients to process:", len(directory_list),"\n")
+    
+    # Establish transaction time
+    today_readable = datetime.datetime.today().strftime("%d/%m/%Y %H:%M:%S")
+    today_string = datetime.datetime.today().strftime("%d%m%Y_%H%M%S") 
 
     # Return message if directory is empty
     if len(directory_list) == 0:
@@ -71,19 +99,17 @@ def extract_file_info(input_path, db):
         # Count files found in the directory
         found_files = len(file_list)
 
-        # Connect to database and create cursor
-        connection = sqlite3.connect(db)
-        cursor = connection.cursor()
-
         # Create table if it does not exist
-        create_filetype_table(database=db)
+        create_file_information_table(database=db)
+
+        create_unmatching_hash_table(database=db)
 
         # Count past records of the patient
         past_records = count_records(
-                    database=db,
-                    table='filetype_table', 
-                    column='patient_id',
-                    value=directory)
+            database=db,
+            table='file_information', 
+            column='patient_id',
+            value=directory)
 
         # Insert a progress bar per patient directory to process
         with click.progressbar(file_path_list, show_eta='enable', fill_char='|', 
@@ -101,74 +127,97 @@ def extract_file_info(input_path, db):
                 abs_path = get_absolute_path(file)
                 hts = get_hts(file)                                    
 
-                # Insert information into database table
-                cursor.execute("""INSERT OR IGNORE INTO filetype_table VALUES(
-                            :patient_id,
-                            :filename,
-                            :extension,
-                            :size,
-                            :hash_sha256,
-                            :file_location,
-                            :hts)""",
-                                {"patient_id": patient_id,
-                                "filename": filename,
-                                "extension": extension,
-                                "size": size,
-                                "hash_sha256": hash256,
-                                "file_location": abs_path,
-                                "hts": hts})   
+                # Compare hashes
+                compare_hash(
+                    database= db,
+                    patient_id= patient_id,
+                    file_name= filename,
+                    current_date= today_readable,
+                    current_hash= hash256,
+                    current_size= size,
+                    current_location= abs_path)
 
-                connection.commit()
-
-            # Close cursor and connection
-            cursor.close()
-            connection.close()
+                # Record information into database
+                record_file_info(
+                    database= db,
+                    patient_id= patient_id,
+                    file_name= filename,
+                    extension= extension,
+                    file_size= size,
+                    first_hash= hash256,
+                    abs_path= abs_path,
+                    file_type= hts)        
 
             # Create table in database to register missing files
-            create_missingfiles_table(database=db)
+            create_missing_files_table(database=db)
 
             # Count and record the missing files per patient
-            essential_files_count = count_essential_files(
+            essential_files_count = check_essential_files(
                             database=db,
-                            column_filename='filename',
-                            table='filetype_table',
-                            column_patient_id='patient_id',
                             patient_id=patient_id)
     
             # Count records after commit
             records_after_commit = count_records(
-                                        database=db,
-                                        table='filetype_table', 
-                                        column='patient_id', 
-                                        value=patient_id)
+                        database=db,
+                        table='file_information',
+                        column='patient_id',
+                        value=patient_id)
             
             # Count new records recorded in database
             new_records = records_after_commit - past_records
-
-            print("\n")
-            print("Patient: {}".format(patient_id),"\n")
-            print("Found in directory: {}".format(found_files))
-            print("Previous records in database: {}".format(past_records))
-            print("New records in database: {}".format(new_records),"\n")
-            print("Essential files:")
-            print("     SV.germline: {}".format(essential_files_count[0]))
-            print("     SNV.germline: {}".format(essential_files_count[1]))
-            print("     SV.somatic: {}".format(essential_files_count[2]))
-            print("     SNV.somatic: {}".format(essential_files_count[3]),"\n")
-
             
-        print("----------------------------------------------------------------------")
+            # Print patient_id to show on progress bar
+            print(" Patient:", patient_id)
 
+            # Append patient summary to txt file
+            export_to_txt(
+                txt_file_name= "content.txt", 
+                mode="a", 
+                content= create_patient_summary(
+                    patient_id= patient_id,
+                    found_files= found_files,
+                    past_records= past_records,
+                    new_records= new_records,
+                    SV_germline_count= essential_files_count[0],
+                    SNV_germline_count= essential_files_count[1],
+                    SV_somatic_count= essential_files_count[2],
+                    SNV_somatic_count= essential_files_count[3]))
     
+    # Write report summary to txt file
+    export_to_txt(
+        txt_file_name= "summary.txt", 
+        mode="w", 
+        content= create_report_summary(
+            today_readable= today_readable,
+            patients_processed= len(directory_list),
+            missing_files_list= list_patients_missing_files(database=db),
+            empty_files_list= list_empty_files(database=db),
+            unmatching_hash_list= list_unmatching_hashes(database=db)))
 
-    print("----------------------------------------------------------------------")
-    print()
-    print("Total patients processed: ", len(directory_list))
-    print()
-    print("Patients missing essential files: ")
-    list_patients_missing_files(database=db)
-    print()
+    # define_status(database=db,
+    #     unmatch_hash_list=,
+    #     empty_files_list=)
 
+    # Print and export the report
+    report_name = f"aacini_report_{today_string}.txt"
+
+    files = ["summary.txt", "content.txt"]
+
+    with open(report_name, "w") as report:
+        # Iterate through list
+        for file in files:
+  
+            # Open each file in read mode
+            with open(file) as infile:
+  
+                # read the data from file1 and
+                # file2 and write it in file3
+                report.write(infile.read())
+
+            os.remove(file)
+    
+    # print_report = open(report_name, "r")
+    # print(print_report.read())
 
 cli.add_command(extract_file_info)
 
