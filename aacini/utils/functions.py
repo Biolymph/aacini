@@ -217,15 +217,18 @@ def create_sha256(file: str) -> str:
     # Instantiate sha256 algorithm
     sha256 = hashlib.sha256()
     
+    # Size in bytes to read in chunks of 128 MB
+    blocksize = 137217728
+
     # Open file in read binary mode
-    with open(file, "rb") as opened_file:
+    with open(file,"rb") as opened_file:
 
-        # Read file content
-        content = opened_file.read()   
-
-        # Create hash for the file
-        sha256.update(content)
-
+        # Iterate read file in chunks defined by blocksize variable
+        for byte_block in iter(lambda: opened_file.read(blocksize),b""):
+            
+            # Generate hash for chunk being read
+            sha256.update(byte_block)
+        
         # Close file
         opened_file.close()
 

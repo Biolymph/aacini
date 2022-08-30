@@ -100,8 +100,8 @@ def extract_file_info(input_path, db):
         # Count past records of the patient
         past_records = count_records(
             database=db,
-            table='file_information', 
-            column='patient_id',
+            table="file_information", 
+            column="patient_id",
             value=directory)
 
         # Look if files are missing from previously recorded
@@ -111,8 +111,8 @@ def extract_file_info(input_path, db):
             file_list= file_list))
 
         # Insert a progress bar per patient directory to process
-        with click.progressbar(file_path_list, show_eta='enable', fill_char='|', 
-                                empty_char='') as files_to_process:
+        with click.progressbar(file_path_list, fill_char="|", 
+                                empty_char="") as files_to_process:
             
             # Iterate through the files in the file list
             for file in files_to_process:
@@ -159,15 +159,15 @@ def extract_file_info(input_path, db):
             # Count records after commit
             records_after_commit = count_records(
                         database=db,
-                        table='file_information',
-                        column='patient_id',
+                        table="file_information",
+                        column="patient_id",
                         value=patient_id)
             
             # Count new records recorded in database
             new_records = records_after_commit - past_records
             
             # Print patient_id to show on progress bar
-            print(" Patient:", patient_id)
+            print("\tPatient:", patient_id)
 
             # Append patient summary to txt file
             export_to_txt(
@@ -225,7 +225,6 @@ def extract_file_info(input_path, db):
                 report.write(infile.read())
 
             os.remove(file)
-
 
 @click.command("update_status")
 @click.option("--db", "-db", help="Specify database name.", default="aacini.db")

@@ -1,7 +1,11 @@
 <img width="713" alt="aacini_logo3" src="https://user-images.githubusercontent.com/78170591/182372880-17ffe77a-a390-4c6f-9bcc-5ba2c333926f.png">
 
 # aacini
-Data summarization tools and scripts for Biolymph deliveries from SciLifeLab
+Data summarization tools and scripts for Biolymph deliveries from SciLifeLab. 
+
+The program is named after the nahualt word "aacini", which refers to one who comes to know something completely.
+
+Source: https://nahuatl.uoregon.edu/content/aacini
 
 ## Getting the code
 You can download a copy of all the files in this repository by cloning the git repository:

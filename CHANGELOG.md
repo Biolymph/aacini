@@ -49,3 +49,12 @@ previously in the database and were lately removed, hence "missing files".
 ### Added:
 * New Click command to update status of record in file_information table.
 * Added ticket name to report and terminal feedback.
+
+## [1.0.0] (2022-08-30)
+
+### Fixed:
+* Updated Readme.md.
+
+### Changed:
+* Hash creation function calculates hash in chunks of 128MB, which increases
+speed and decreases memory usage.
