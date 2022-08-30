@@ -37,3 +37,15 @@ file was missing and when it was added.
 ### Added:
 * Function to compare hashes from the same file and record it in a new
 table in the database. 
+
+## [0.2.0] (2022-08-30)
+
+### Changed:
+* Function to list missing files exports a tuple, not a list. The list 
+is creating by iterating the directories in the "extract" Click command.
+* Separated list for "missing essential files" and for files that were
+previously in the database and were lately removed, hence "missing files".
+
+### Added:
+* New Click command to update status of record in file_information table.
+* Added ticket name to report and terminal feedback.

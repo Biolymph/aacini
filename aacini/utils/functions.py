@@ -3,22 +3,79 @@ from genericpath import exists
 import hashlib
 import json
 from numpy import equal, var
-import pandas as pd
 import fnmatch
 import pathlib
 import os
 import sqlite3
-import pysam
 import datetime
 import sys
 
 # Extensions list and categories from constants.py
 from aacini.utils.constants import extensions_list
 from aacini.utils.constants import extensions_categories
+from aacini.utils.constants import essential_files_patterns
 
 ######################################################################
 ### File information extraction functions
 ######################################################################
+
+def list_file_path(directory_path: str) -> list:
+    """
+    This function lists the file paths of files in a given directory.
+    
+    Args:
+        directory_path (str): path of the directory to list files from.
+
+    Returns:
+        List of Possix file paths.
+    """
+    
+    # List paths of directories to process
+    # List files in the directory
+    file_path_list = []
+    
+    # Recursively iterate through the directory
+    for file_path in pathlib.Path(directory_path).rglob("*"):
+        
+        # Keep only files
+        if os.path.isfile(file_path) == True:
+            name = pathlib.Path(file_path).name
+            file_path = file_path
+            
+            # Avoid files that start with . (e.g. ".DS_Store")
+            if not name.startswith("."):
+                file_path_list.append(file_path)
+    
+    return file_path_list
+
+def list_files(directory_path: str) -> list:
+    """
+    This function lists the files in a given directory.
+    
+    Args:
+        directory_path (str): path of the directory to list files from.
+
+    Returns:
+        List of file names.
+    """
+
+    # List paths of directories to process
+    # List files in the directory
+    file_list = []
+        
+    # Recursively iterate through the directory
+    for file_path in pathlib.Path(directory_path).rglob("*"):
+            
+        # Keep only files
+        if os.path.isfile(file_path) == True:
+            name = pathlib.Path(file_path).name
+            file_path = file_path
+                
+            # Avoid files that start with . (e.g. ".DS_Store")
+            if not name.startswith("."):
+                file_list.append(name)
+    
+    return file_list
 
 def return_json_as_pydict(file: str) -> str:
     """
@@ -227,6 +284,7 @@ def create_file_information_table(database:str):
     # Create file_information table if it does not exists 
     cursor.execute("""CREATE TABLE if not exists file_information (
             date text,
+            ticket text,
             patient_id text,
             file_name text,
             extension text,
@@ -278,7 +336,7 @@ def create_file_content_table(database:str):
     cursor.close()
     connection.close()
 
-def create_missing_files_table(database: str):
+def create_essential_files_missing_table(database: str):
     """
     Creates table to store 'Missing files' information per file per 
     patient if it does not exist already.
@@ -355,14 +413,17 @@ def create_unmatching_hash_table(database: str):
 ### Database interaction functions
 ######################################################################
 
-def record_file_info(database: str, patient_id: str, file_name: str, 
-    extension: str, file_size: str, first_hash: str, abs_path: str, 
-    file_type: str):
+def record_file_info(database: str, ticket: str, patient_id: str, 
+    file_name: str, extension: str, file_size: str, first_hash: str, 
+    abs_path: str, file_type: str):
     """
     Extracts file information and records it in a table in the 
     database.
 
     Args:
+        database (str): name of the database to connect to.
+        ticket (str): name of the package sent by the lab, corresponds
+            to the directory where the patient directory is stored.
         patient_id (str): unique string to identify the patient.
         file_name (str): full file name.
         extension (str): literal file extension.
@@ -371,8 +432,6 @@ def record_file_info(database: str, patient_id: str, file_name: str,
         abs_path (str): absolute path of the file.
         file_type (str): file type according to the extension. 
             E.g.: If extension is "cram.crai" the file type is "cram".
-        status (str): status of the file in relation to the study.
-            Options: "pass", "hash_unmatch", "empty_file".
 
     Returns:
         Information recorded into the "File Content" table in the 
@@ -386,6 +445,7 @@ def record_file_info(database: str, patient_id: str, file_name: str,
     # Record information into database table
     cursor.execute("""INSERT OR IGNORE INTO file_information VALUES(
                     :date,
+                    :ticket,
                     :patient_id,
                     :file_name,
                     :extension,
@@ -395,6 +455,7 @@ def record_file_info(database: str, patient_id: str, file_name: str,
                     :hts,
                     :status)""",
                         {"date": datetime.datetime.today().strftime("%d/%m/%Y %H:%M:%S"),
+                        "ticket": ticket,
                         "patient_id": patient_id,
                         "file_name": file_name,
                         "extension": extension,
@@ -451,7 +512,7 @@ def check_essential_files(database: str, patient_id: str):
     types for the study, then registers the information in a 
     table if they are missing. 
     
-    The four file types are: 
+    The four file types (in constants.py) are: 
         - SV.germline
         - SNV.germline
         - SV.somatic
@@ -478,10 +539,8 @@ def check_essential_files(database: str, patient_id: str):
         # Instantiate empty counts list 
         counts_list = []
 
-        # File patterns to search for and count
-        file_patterns = ['SV.germline', 'SNV.germline', 'SV.somatic', 'SNV.somatic']
-    
-        for file_pattern in file_patterns:
+        # File patterns to search are in constants.py
+        for file_pattern in essential_files_patterns:
             
             # Select and count records starting with file_pattern
             cursor.execute(f"""SELECT COUNT(patient_id)
@@ -599,7 +658,8 @@ def list_patients_missing_files(database: str) -> list:
         database (str): name of the database to connect to.
     
     Returns:
-        List of tuples of essential files missing.
+        List of tuples (as patient_id, file_name) of essential 
+        files missing.
     """
     
     try:
@@ -635,14 +695,21 @@ def compare_hash(database: str, patient_id: str, file_name: str,
     current_date: str, current_hash: str, current_size: str,
     current_location: str):
     """
-    This function compares the current hash with the hash previously
-    recorded in the database. 
+    This function compares the hash of the current file with the 
+    hash previously recorded in the database. 
 
     Args:
-
+        database (str): name of the database to connect to.
+        patient_id (str): unique string to identify the patient.
+        file_name (str): full file name.
+        current_date (str): datetime of the file being processed.
+        current_hash (str): hash of the file being processed.
+        current_size (str): file size of the file being processed.
+        current_location (str): location of the file being processed.
 
     Returns:
-
+        Records file information in a table in the database if the 
+        hash does not match a previously recorded hash for the same file.
     """
     
     try:
@@ -738,21 +805,17 @@ def compare_hash(database: str, patient_id: str, file_name: str,
         cursor.close()
         connection.close()
 
-def list_unmatching_hashes(database: str):
+def list_unmatching_hashes(database: str) -> list:
     """
-    Compares the hash or message direct of the files in the 
-    directory to the one recorded in the database and returns 
-    the names of the files changed.
+    This function lists the files with unmatching hashes from those
+    previously recorded in the database.
 
     Args:
         database (str): name of the database to connect to.
-        file_name (str): full file name.
-        patient_id (str): unique string identifying the patient.
-        file_hash (str): hash value of the file in the directory.
 
     Returns:
-        List of tuples of files with different hash than recorded 
-        before.
+        List of tuples (as patient_id, file_name) of files with different 
+        hash than recorded before.
     """
 
     try:
@@ -769,7 +832,7 @@ def list_unmatching_hashes(database: str):
         unmatching_hashes_list = cursor.fetchall()
         
         if unmatching_hashes_list == []:
-            return None
+            return []
         else:
             return unmatching_hashes_list
 
@@ -785,14 +848,15 @@ def list_unmatching_hashes(database: str):
 
 def list_empty_files(database: str) -> list:
     """
-    Identify if there are empty files in the directory being
+    This function lists the empty files in the directory being
     processed. 
 
     Args:
         database (str): name of the database to connect to.
 
     Returns:
-        Names of files that are empty files.
+        List of tuples (as patient_id, file_name) of files that 
+        are empty files.
     """
     
     empty_sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
@@ -827,8 +891,56 @@ def list_empty_files(database: str) -> list:
         # Return empty files list
         return empty_files_list
 
+def list_missing_files(database: str, directory: str,
+    file_list: list) -> list:
+    """
+    Identify if there are empty files in the directory being
+    processed. 
+
+    Args:
+        database (str): name of the database to connect to.
+
+    Returns:
+        List of tuples (as patient_id, file_name) of files that 
+        were previously recorded in the database but are now 
+        missing in the directory being processed.
+    """
+
+    try:
+        # Connect to database and create cursor
+        connection = sqlite3.connect(database)
+        cursor = connection.cursor()
+
+        # Select file name
+        cursor.execute(f"""SELECT patient_id,file_name
+            FROM file_information
+            WHERE patient_id = "{directory}"
+            """)
+        
+        # Retrieve records
+        records = cursor.fetchall()
+
+        # Compare file_name records with the directory file_list
+        for record in records:
+            file_name = record[1]
+            if file_name in file_list:
+                pass
+            elif file_name not in file_list:
+                missing_file_tuple = record[0],record[1]
+                return missing_file_tuple
+
+    # Print error if encountered 
+    except sqlite3.Error as error:
+        print("Failed to read data from table,", error)
+    
+    # Finalize function
+    finally:
+        # Close cursor and connection
+        cursor.close()
+        connection.close()  
+    
 def define_status(database: str, unmatch_hash_list: list, 
-    empty_files_list: list):
+    empty_files_list: list, missing_files_list: list):
     """
     This function returns the status of the file to identify if there
     are issues to be fixed.
@@ -840,52 +952,81 @@ def define_status(database: str, unmatch_hash_list: list,
             recorded hash. It could mean that the contents of the file 
             where changed since the file was recorded in the database, 
         - empty_file: the file is empty.
+        - missing_file: when a file once recorded in the database is no
+            longer in the directory.
 
     Args:
-        database (str):
-        unmatch_hash_list (list):
-        empty_files_list (list):
+        database (str): name of the database to connect to.
+        unmatch_hash_list (list): list of files with unmatching hashes 
+            from those previously recorded. 
+        empty_files_list (list): list of empty files according to the 
+            hash and file size.
+        missing_files_list (list): list of files once recorded in the 
+            database that are no longer in the directory. 
 
     Return:
-        File status.
+        Record file status in the file_information table.
     """
+    
     try:
         # Connect to database and create cursor
         connection = sqlite3.connect(database)
         cursor = connection.cursor()
 
-        # Select file name
-        cursor.execute(f"""SELECT file_name, patient_id
+        # Select all patients and their files names
+        cursor.execute(f"""SELECT patient_id,file_name
             FROM file_information
             """) 
 
+        # Extract records from cursor
         records = cursor.fetchall()
 
+        # Iterate through the records to 
         for record in records:
-            if record[0] in unmatch_hash_list:
+            # Compare each record in records with the unmatching 
+            # hash list
+            if record in unmatch_hash_list:
                 status = "hash_unmatch"
                 cursor.execute(f"""UPDATE file_information
-                    SET status = {status}
-                    WHERE patient_id = {record[1]} 
-                        AND file_name = {record[0]}""")
+                    SET status = "{status}"
+                    WHERE patient_id = "{record[0]}"
+                        AND file_name = "{record[1]}" """)
+                connection.commit()
 
-            elif record[0] in empty_files_list:
+            # Compare each record in records with the empty 
+            # files list
+            elif record in empty_files_list:
                 status = "empty_file"
                 cursor.execute(f"""UPDATE file_information
-                    SET status = {status}
-                    WHERE patient_id = {record[1]} 
-                        AND file_name = {record[0]}""")
+                    SET status = "{status}"
+                    WHERE patient_id = "{record[0]}"
+                        AND file_name = "{record[1]}" """)
+                connection.commit()
 
-            elif record[0] not in unmatch_hash_list or empty_files_list:
+            # Compare each record in records with the missing 
+            # files list
+            elif record in missing_files_list:
+                status = "missing_file"
+                cursor.execute(f"""UPDATE file_information
+                    SET status = "{status}"
+                    WHERE patient_id = "{record[0]}"
+                        AND file_name = "{record[1]}" """)
+                connection.commit()
+
+            # If not in any previous lists, set status to "pass"
+            else:
                 status = "pass"
                 cursor.execute(f"""UPDATE file_information
-                    SET status = {status}
-                    WHERE patient_id = {record[1]} 
-                        AND file_name = {record[0]}""")
+                    SET status = "{status}"
+                    WHERE patient_id = "{record[0]}"
+                        AND file_name = "{record[1]}" """)
+                connection.commit()
 
+    # Print error if encountered 
     except sqlite3.Error as error:
         print("Failed to read data from table,", error)
     
+    # Finalize function
     finally:
         # Close cursor and connection
         cursor.close()
@@ -940,29 +1081,53 @@ Essential files:
     
     return patient_summary
 
-def create_report_summary(today_readable: str, patients_processed: int, 
-    missing_files_list: str, empty_files_list: str,
-    unmatching_hash_list: str) -> str: 
+def create_report_summary(ticket: str, today_readable: str, 
+    patients_processed: int, essential_files_missing_list: list, 
+    empty_files_list: list, unmatching_hash_list: list,
+    missing_files_list: list) -> str: 
     """
+    This function creates the summary of the report of directory
+    being processed. 
+
+    Args:
+        ticket (str): name of the package sent by the lab, 
+            corresponds to the directory where the patient directory 
+            is stored.
+        today_readable (str): string with the datetime in 
+            human-readable format.
+        patients_processed (int): number of patients being processed.
+        essential_files_missing_list (list): list of tuples (as 
+            patient_id, file_name) of essential files missing.
+        empty_files_list (list): list of tuples (as patient_id, 
+            file_name) of files that are empty files.
+        unmatching_hash_list (list): list of tuples (as patient_id, 
+            file_name) of files with different hash than recorded before.
+        missing_files_list (list): list of tuples (as patient_id, 
+            file_name) of files that were previously recorded in the 
+            database but are now missing in the directory being processed.
     
+    Returns:
+        Formatted string with the summarized information per patient 
+        that resulted from runnning the program.
     """
  
     string_1 = f"""
 ----------------------------------------------------------------------
 -------------------------- AACINI REPORT -----------------------------
 ----------------------------------------------------------------------
+Ticket: {ticket}\n
 Date: {today_readable}\n
 Total patients processed: {patients_processed}\n
 Patients missing essential files:"""
 
     # If list is empty, print "None"
-    if missing_files_list == []:
-        missing_files = "\n   - None"
+    if essential_files_missing_list == []:
+        essential_files_missing = "\n   - None"
     else:
-        missing_files = ""
+        essential_files_missing = ""
         # Print records fetched in list as "patient_id: file_name"
-        for tuple in missing_files_list:
-            missing_files += "\n" +f"   - {tuple[0]}: {tuple[1]}"
+        for tuple in essential_files_missing_list:
+            essential_files_missing += "\n" +f"   - {tuple[0]}: {tuple[1]}"
 
     string_2 = "\nEmpty files (patient ID : file name):"
 
@@ -976,7 +1141,7 @@ Patients missing essential files:"""
     
     string_3 = "\nFiles with unmatching hashes:"
 
-    if unmatching_hash_list == None:
+    if unmatching_hash_list == []:
         unmatching_hash = "\n   - None"
 
     # For each tuple in the list, print "patient_id: file_name"
@@ -985,26 +1150,47 @@ Patients missing essential files:"""
         for tuple in unmatching_hash_list:
             unmatching_hash += "\n" + f"   - {tuple[0]}: {tuple[1]}"
 
-    string_4 = "\n----------------------------------------------------------------------"
+    string_4 = "\nMissing files that were previously recorded:"
 
-    report_summary = "{} {}\n {} {}\n {} {}\n {}".format(
+    for i in missing_files_list:
+        if i == None:
+            missing_files_list.remove(i)
+
+    if missing_files_list == [] or missing_files_list == [None]:
+        missing_files = "\n   - None"
+
+    # For each tuple in the list, print "patient_id: file_name"
+    else:
+        missing_files = ""
+        for tuple in missing_files_list:
+            missing_files += "\n" + f"   - {tuple[0]}: {tuple[1]}"
+    
+    string_5 = "\n----------------------------------------------------------------------"
+
+    report_summary = "{} {}\n {} {}\n {} {}\n {} {}\n {}".format(
         string_1,
-        missing_files,
+        essential_files_missing,
         string_2, 
         empty_files,
         string_3,
         unmatching_hash,
-        string_4)
+        string_4,
+        missing_files,
+        string_5)
 
     return report_summary
 
 def export_to_txt(txt_file_name: str, mode: str, content: str):
     """
+    This function exports content into a .txt file.
 
     Args:
+        txt_file_name (str): name of the file to be exported.
+        mode (str): mode to open the file.
+        content (str): content to save to the file.
 
     Returns:
-
+        Text file with specified contents.
     """
 
     # Save a reference to the original standard output
@@ -1018,3 +1204,46 @@ def export_to_txt(txt_file_name: str, mode: str, content: str):
 
     # Reset the standard output to its original value           
     sys.stdout = original_stdout 
+
+######################################################################
+### Updating functions
+######################################################################
+
+def update_record_status(database, patient_id, file_name, status):
+    """
+    This function updates the status of a record in the 
+    file_information table in the database based on the patient_id
+    and file_name. 
+
+    Args:
+        database (str): name of the database to connect to.
+        patient_id (str): unique string to identify the patient.
+        file_name (str): full file name.
+        status (str): status of the file in relation to the study.
+            Options: "pass", "hash_unmatch", "empty_file", "missing_file".
+
+    Returns:
+        Changed status in record given.
+    """
+
+    try:
+        # Connect to database and create cursor
+        connection = sqlite3.connect(database)
+        cursor = connection.cursor()
+
+        cursor.execute(f"""UPDATE file_information
+            SET status = "{status}"
+            WHERE patient_id = "{patient_id}"
+                AND file_name = "{file_name}" """)
+        
+        connection.commit()
+
+    # Print error if encountered  
+    except sqlite3.Error as error:
+        print("Failed to read data from table,", error)
+    
+    # Finalize function
+    finally:
+        # Close cursor and connection
+        cursor.close()
+        connection.close()

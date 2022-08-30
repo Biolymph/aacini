@@ -35,3 +35,9 @@ extensions_list = [
     'gene_metrics',
     'doc'
 ]
+
+essential_files_patterns = [
+    'SV.germline', 
+    'SNV.germline', 
+    'SV.somatic', 
+    'SNV.somatic']
