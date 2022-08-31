@@ -1159,7 +1159,7 @@ Patients missing essential files:"""
         if i == None:
             missing_files_list.remove(i)
 
-    if missing_files_list == [] or missing_files_list == [None]:
+    if missing_files_list == [] or missing_files_list == [None] or missing_files_list == None:
         missing_files = "\n   - None"
 
     # For each tuple in the list, print "patient_id: file_name"
