@@ -3,7 +3,7 @@
 # aacini
 Data summarization tools and scripts for Biolymph deliveries from SciLifeLab. 
 
-The program is named after the nahualt word "aacini", which refers to one who comes to know something completely [1](https://nahuatl.uoregon.edu/content/aacini). Aacini is represented as an axolotl named Maria. Axolotls simbolize health and regeneration in Mexican culture [2](https://www.nationalgeographic.com/animals/article/mexico-is-finally-embracing-its-quirky-salamander-the-axolotl).
+The program is named after the Nahualt word "aacini", which refers to one who comes to know something completely [1](https://nahuatl.uoregon.edu/content/aacini). Aacini is represented as an axolotl named Maria. Axolotls symbolize health and regeneration in Mexican culture [2](https://www.nationalgeographic.com/animals/article/mexico-is-finally-embracing-its-quirky-salamander-the-axolotl).
 
 Here, have a meme by Nathan W. Pyle:
 
