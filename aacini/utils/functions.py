@@ -733,8 +733,8 @@ def compare_hash(database: str, patient_id: str, file_name: str,
         if record == []:
             return
         else:
-            for tuple in record:
-                recorded_hash = tuple[0]
+            for my_tuple in record:
+                recorded_hash = my_tuple[0]
 
         # If the there is no hash recorded or the recorded hash  
         # matches the file hash given, then pass.
@@ -759,12 +759,12 @@ def compare_hash(database: str, patient_id: str, file_name: str,
                 pass
 
             elif records != []:
-                for tuple in records:
+                for my_tuple in records:
                     # Retrieve first recording data
-                    first_date = tuple[0]
-                    first_hash = tuple[1]
-                    first_size = tuple[2]
-                    first_location = tuple[3]
+                    first_date = my_tuple[0]
+                    first_hash = my_tuple[1]
+                    first_size = my_tuple[2]
+                    first_location = my_tuple[3]
             
                 # Define current data
                 last_date = current_date
@@ -923,14 +923,19 @@ def list_missing_files(database: str, directory: str,
         # Retrieve records
         records = cursor.fetchall()
 
+        print(records)
+        if records == []:
+            return "0"
+
         # Compare file_name records with the directory file_list
-        for record in records:
-            file_name = record[1]
-            if file_name in file_list:
-                return "0"
-            elif file_name not in file_list:
-                missing_file_tuple = record[0],record[1]
-                return missing_file_tuple
+        else:
+                for record in records:
+                    file_name = record[1]
+                    if file_name in file_list:
+                        return "0"
+                    elif file_name not in file_list:
+                        missing_file_tuple = record[0],record[1]
+                        return missing_file_tuple
 
     # Print error if encountered 
     except sqlite3.Error as error:
@@ -1129,18 +1134,18 @@ Patients missing essential files:"""
     else:
         essential_files_missing = ""
         # Print records fetched in list as "patient_id: file_name"
-        for tuple in essential_files_missing_list:
-            essential_files_missing += "\n" +f"   - {tuple[0]}: {tuple[1]}"
+        for my_tuple in essential_files_missing_list:
+            essential_files_missing += "\n" +f"   - {my_tuple[0]}: {my_tuple[1]}"
 
     string_2 = "\nEmpty files (patient ID : file name):"
 
     if empty_files_list == []:
         empty_files = "\n   - None"
-    # For each tuple in the list, print "patient_id: file_name"
+    # For each my_tuple in the list, print "patient_id: file_name"
     else:
         empty_files = ""
-        for tuple in empty_files_list:
-            empty_files += "\n" + f"   - {tuple[0]}: {tuple[1]}"
+        for my_tuple in empty_files_list:
+            empty_files += "\n" + f"   - {my_tuple[0]}: {my_tuple[1]}"
     
     string_3 = "\nFiles with unmatching hashes:"
 
@@ -1150,24 +1155,15 @@ Patients missing essential files:"""
     # For each tuple in the list, print "patient_id: file_name"
     else:
         unmatching_hash = ""
-        for tuple in unmatching_hash_list:
-            unmatching_hash += "\n" + f"   - {tuple[0]}: {tuple[1]}"
+        for my_tuple in unmatching_hash_list:
+            unmatching_hash += "\n" + f"   - {my_tuple[0]}: {my_tuple[1]}"
 
     string_4 = "\nMissing files that were previously recorded:"
 
-    for i in missing_files_list:
+    for my_tuple in missing_files_list:
         missing_files = ""
-        if i != "0":
-            missing_files += "\n" + f"   - {i[0]}: {i[1]}"
-
-    # if missing_files_list == [] or missing_files_list == ["0"]:
-    #     missing_files = "\n   - None"
-
-    # # For each tuple in the list, print "patient_id: file_name"
-    # else:
-    #     missing_files = ""
-    #     for tuple in missing_files_list:
-    #         missing_files += "\n" + f"   - {tuple[0]}: {tuple[1]}"
+        if my_tuple != "0" or my_tuple == None:
+            missing_files += "\n" + f"   - {my_tuple[0]}: {my_tuple[1]}"
     
     string_5 = "\n----------------------------------------------------------------------"
 
