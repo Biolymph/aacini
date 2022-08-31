@@ -1,0 +1,180 @@
+
+Patient: F0054321
+
+Files in directory:
+    - Files found: 30
+    - Previous records in database: 30
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 4
+    - SNV.germline: 4
+    - SV.somatic: 4
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------
+
+Patient: F0012345
+
+Files in directory:
+    - Files found: 24
+    - Previous records in database: 24
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 1
+    - SNV.germline: 4
+    - SV.somatic: 4
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------
+
+Patient: F0046570
+
+Files in directory:
+    - Files found: 23
+    - Previous records in database: 23
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 4
+    - SNV.germline: 4
+    - SV.somatic: 1
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------
+
+Patient: F0054321
+
+Files in directory:
+    - Files found: 30
+    - Previous records in database: 30
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 4
+    - SNV.germline: 4
+    - SV.somatic: 4
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------
+
+Patient: F0012345
+
+Files in directory:
+    - Files found: 24
+    - Previous records in database: 24
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 1
+    - SNV.germline: 4
+    - SV.somatic: 4
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------
+
+Patient: F0046570
+
+Files in directory:
+    - Files found: 23
+    - Previous records in database: 23
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 4
+    - SNV.germline: 4
+    - SV.somatic: 1
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------
+
+Patient: F0054321
+
+Files in directory:
+    - Files found: 30
+    - Previous records in database: 30
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 4
+    - SNV.germline: 4
+    - SV.somatic: 4
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------
+
+Patient: F0012345
+
+Files in directory:
+    - Files found: 24
+    - Previous records in database: 24
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 1
+    - SNV.germline: 4
+    - SV.somatic: 4
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------
+
+Patient: F0046570
+
+Files in directory:
+    - Files found: 23
+    - Previous records in database: 23
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 4
+    - SNV.germline: 4
+    - SV.somatic: 1
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------
+
+Patient: F0054321
+
+Files in directory:
+    - Files found: 30
+    - Previous records in database: 30
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 4
+    - SNV.germline: 4
+    - SV.somatic: 4
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------
+
+Patient: F0012345
+
+Files in directory:
+    - Files found: 24
+    - Previous records in database: 24
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 1
+    - SNV.germline: 4
+    - SV.somatic: 4
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------
+
+Patient: F0046570
+
+Files in directory:
+    - Files found: 23
+    - Previous records in database: 23
+    - New records in database: 0
+
+Essential files:
+    - SV.germline: 4
+    - SNV.germline: 4
+    - SV.somatic: 1
+    - SNV.somatic: 4
+
+----------------------------------------------------------------------

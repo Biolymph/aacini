@@ -927,7 +927,7 @@ def list_missing_files(database: str, directory: str,
         for record in records:
             file_name = record[1]
             if file_name in file_list:
-                pass
+                return "0"
             elif file_name not in file_list:
                 missing_file_tuple = record[0],record[1]
                 return missing_file_tuple
@@ -1156,12 +1156,12 @@ Patients missing essential files:"""
     string_4 = "\nMissing files that were previously recorded:"
 
     for i in missing_files_list:
-            if i == None:
-                missing_files_list.remove(i)
+        if i == "0":
+            missing_files_list.remove(i)
 
     print(missing_files_list)
 
-    if missing_files_list == [] or missing_files_list == [None] or missing_files_list == None:
+    if missing_files_list == []:
         missing_files = "\n   - None" 
 
     # For each tuple in the list, print "patient_id: file_name"
