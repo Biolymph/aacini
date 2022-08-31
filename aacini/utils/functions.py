@@ -923,19 +923,18 @@ def list_missing_files(database: str, directory: str,
         # Retrieve records
         records = cursor.fetchall()
 
-        print(records)
         if records == []:
             return "0"
 
         # Compare file_name records with the directory file_list
         else:
-                for record in records:
-                    file_name = record[1]
-                    if file_name in file_list:
-                        return "0"
-                    elif file_name not in file_list:
-                        missing_file_tuple = record[0],record[1]
-                        return missing_file_tuple
+            for record in records:
+                file_name = record[1]
+                if file_name in file_list:
+                    return "0"
+                elif file_name not in file_list:
+                    missing_file_tuple = record[0],record[1]
+                    return missing_file_tuple
 
     # Print error if encountered 
     except sqlite3.Error as error:
