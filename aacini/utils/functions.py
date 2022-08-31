@@ -1,5 +1,3 @@
-from curses import pair_content
-from genericpath import exists
 import hashlib
 import json
 from numpy import equal, var
