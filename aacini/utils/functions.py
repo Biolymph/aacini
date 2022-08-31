@@ -1155,6 +1155,8 @@ Patients missing essential files:"""
 
     string_4 = "\nMissing files that were previously recorded:"
 
+    print(missing_files_list)
+    
     for i in missing_files_list:
         if i == "0":
             missing_files_list.remove(i)
