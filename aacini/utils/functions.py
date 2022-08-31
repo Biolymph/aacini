@@ -1155,16 +1155,19 @@ Patients missing essential files:"""
 
     string_4 = "\nMissing files that were previously recorded:"
 
-    print(missing_files_list)
-    
+    print("Before:",missing_files_list)
+    print(len(missing_files_list))
+
     for i in missing_files_list:
+        print(i)
         if i == "0":
             missing_files_list.remove(i)
 
-    print(missing_files_list)
+    print("After:",missing_files_list)
+    print(len(missing_files_list))
 
-    if missing_files_list == []:
-        missing_files = "\n   - None" 
+    if missing_files_list == [] or missing_files_list == ["0"]:
+        missing_files = "\n   - None"
 
     # For each tuple in the list, print "patient_id: file_name"
     else:
