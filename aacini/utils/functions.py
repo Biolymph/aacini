@@ -1163,6 +1163,8 @@ Patients missing essential files:"""
         missing_files = ""
         if my_tuple != "0" or my_tuple == None:
             missing_files += "\n" + f"   - {my_tuple[0]}: {my_tuple[1]}"
+        else:
+            missing_files = "\n   - None"
     
     string_5 = "\n----------------------------------------------------------------------"
 
